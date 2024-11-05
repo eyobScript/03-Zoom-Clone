@@ -1,3 +1,4 @@
+const socket = io('/');
 const videoGrid = document.getElementById('video-grid');
 const myVideo = document.createElement('video');
 myVideo.muted = true;
@@ -14,8 +15,9 @@ async function getUserMediaStream() {
       console.log('Error accessing media devices:', err);
     }
   }
-  
   getUserMediaStream();
+
+  socket.emit('join-room');
   
 function addVideoStream(video, stream){
     video.srcObject = stream;
