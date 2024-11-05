@@ -17,10 +17,20 @@ async function getUserMediaStream() {
   }
   getUserMediaStream();
 
-  socket.emit('join-room');
+  socket.emit('join-room', ROOM_ID);
+
+  socket.on('user-connected', () => {
+    connectToNewUser()
+  });
+
+
   
 function addVideoStream(video, stream){
     video.srcObject = stream;
     video.addEventListener('loadedmetadata', () => video.play());
     videoGrid.append(video);
+}
+
+function connectToNewUser(){
+  console.log('------------')
 }

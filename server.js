@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer } from 'http'; // Importing 'createServer' from 'http'
 import { v4 as uuidV4 } from 'uuid'
 import { Server } from 'socket.io';
+import {ExpressPeerServer} from 'peer'
 
 
 
@@ -23,8 +24,11 @@ app.get('/:room',(req, res) => {
 });
 
 io.on('connection',(socket) => {
-    socket.on('join-room', () => {
-        console.log('eyob joined');
+    socket.on('join-room', (roomId) => {
+        socket.join(roomId);
+        socket.to(roomId).broadcast.emit('user-connected');
+
+        
     });
 });
 server.listen(port, () => {
