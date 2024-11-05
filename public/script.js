@@ -1,4 +1,11 @@
 const socket = io('/');
+
+const myPeer = new Peer(undefined, {
+  path: '/peerjs',
+  host: '/',
+  port: '3000',
+});
+
 const videoGrid = document.getElementById('video-grid');
 const myVideo = document.createElement('video');
 myVideo.muted = true;
@@ -11,17 +18,24 @@ async function getUserMediaStream() {
       });
       myVideoStream = stream;
       addVideoStream(myVideo, stream);
+
+      socket.on('user-connected', (userId) => {
+        connectToNewUser(userId, stream);
+      });
+
     } catch (err) {
       console.log('Error accessing media devices:', err);
     }
   }
   getUserMediaStream();
 
-  socket.emit('join-room', ROOM_ID);
-
-  socket.on('user-connected', () => {
-    connectToNewUser()
+  myPeer.on('open', (id) => {  
+    socket.emit('join-room', ROOM_ID, id);
   });
+
+
+
+ 
 
 
   
@@ -31,6 +45,7 @@ function addVideoStream(video, stream){
     videoGrid.append(video);
 }
 
-function connectToNewUser(){
-  console.log('------------')
+function connectToNewUser(userId){
+
+  console.log(userId);
 }
