@@ -10,7 +10,7 @@ const port = 3000;
 app.use(cors());
 
 // Create the server before passing it to PeerServer
-const server = createServer(app); // Using 'createServer' from 'http'
+const server = createServer(app);
 const io = new Server(server);
 
 // Initialize Peer Server with the HTTP server
@@ -30,15 +30,22 @@ app.get("/:room", (req, res) => {
   res.render("room", { roomId: req.params.room });
 });
 
+// Socket.io connection
 io.on("connection", (socket) => {
+
+  // Handle user joining a room
   socket.on("join-room", (roomId, userId) => {
     socket.join(roomId);
     socket.to(roomId).emit("user-connected", userId);
+
+    // Handle user disconnecting
     socket.on("disconnect", () => {
       socket.to(roomId).emit("user-disconnected", userId);
     });
   });
 });
+
+// Start server
 server.listen(port, () => {
-  console.log(`Server is listening on port ${port}`);
+  console.log(`Server is listening on http://localhost:${port}`);
 });

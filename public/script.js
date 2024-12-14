@@ -12,6 +12,7 @@ const videoGrid = document.getElementById("video-grid");
 const myVideo = document.createElement("video");
 myVideo.muted = true;
 let myVideoStream;
+
 async function getUserMediaStream() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -21,15 +22,13 @@ async function getUserMediaStream() {
     myVideoStream = stream;
     addVideoStream(myVideo, stream);
 
-
-  myPeer.on('call', (call) => {
-    call.answer(stream); // Answer the call with the user's
-    const video = document.createElement("video");
-    call.on("stream", (userVideoStream) => {
-      addVideoStream(video, userVideoStream);
+    myPeer.on("call", (call) => {
+      call.answer(stream); // Answer the call with the user's stream
+      const video = document.createElement("video");
+      call.on("stream", (userVideoStream) => {
+        addVideoStream(video, userVideoStream);
+      });
     });
-  });
-
 
     socket.on("user-connected", (userId) => {
       connectToNewUser(userId, stream);
@@ -44,12 +43,26 @@ myPeer.on("open", (id) => {
   socket.emit("join-room", ROOM_ID, id);
 });
 
-myPeer.on('user-disconnected', (userId) => {
-  if(peers[userId]) peers[userId].close();
+socket.on("user-disconnected", (userId) => {
+  console.log(`User ${userId} disconnected`);
+  if (peers[userId]) {
+    peers[userId].close();
+    delete peers[userId];
+  }
+  
+  // Remove video from the DOM
+  const video = document.querySelector(`video[data-peer-id="${userId}"]`);
+  if (video) video.remove();
 });
 
-function addVideoStream(video, stream) {
+function addVideoStream(video, stream, userId = null) {
   video.srcObject = stream;
+
+  // Add an identifier for cleanup
+  if (userId) {
+    video.setAttribute("data-peer-id", userId);
+  }
+
   video.addEventListener("loadedmetadata", () => video.play());
   videoGrid.append(video);
 }
@@ -57,15 +70,23 @@ function addVideoStream(video, stream) {
 function connectToNewUser(userId, stream) {
   const call = myPeer.call(userId, stream);
   const video = document.createElement("video");
+  
   call.on("stream", (userVideoStream) => {
-    addVideoStream(video, userVideoStream);
+    addVideoStream(video, userVideoStream, userId); // Pass userId
   });
-  call.on('close', () =>{
-    video.remove();
+
+  call.on("close", () => {
+    const video = document.querySelector(`video[data-peer-id="${userId}"]`);
+    if (video) video.remove(); // Remove video from DOM
+    delete peers[userId];
   });
-  call.on('error', () => {
-    console.error(`Error with peer connection: ${error.name} - ${error.message}`);
-    video.remove();
+
+  call.on("error", () => {
+    console.error(`Error with peer connection`);
+    const video = document.querySelector(`video[data-peer-id="${userId}"]`);
+    if (video) video.remove();
+    delete peers[userId];
   });
+
   peers[userId] = call;
 }
